@@ -4,27 +4,24 @@ This file takes a 3D model as an stl file, centers it, then generates png images
 
 import stl
 import numpy as np
+import os
 from matplotlib import pyplot
 from mpl_toolkits import mplot3d
-
-#read stl from model_path
-model_path = './3DModels/slide-cap.stl'
-raw_stl_mesh = stl.mesh.Mesh.from_file(model_path)
 
 #Function to ensure model is centered on origin prior to generating images from different views
 def center_points_on_origin(mesh_data):
     vertices = mesh_data.points
-    print("vertices before are")
-    print(vertices)
+    #print("vertices before are")
+    #print(vertices)
     center = np.mean(vertices, axis=0)
-    print("old mean is ", center)
+    #print("old mean is ", center)
     translation = -center
     translated_vertices = vertices + translation
-    print("new vertices")
-    print(translated_vertices)
+    #print("new vertices")
+    #print(translated_vertices)
     # Update the vertices in the mesh
     mesh_data.points = translated_vertices
-    print("new mean is ", np.mean(translated_vertices, axis=0))
+    #print("new mean is ", np.mean(translated_vertices, axis=0))
     return mesh_data
 
 """
@@ -33,7 +30,7 @@ elev controls rotation about the x axis (i.e. front view, top view, etc.)
 azim controls rotation about the z axis (front view, side view, etc.)
 dist is an experimentally determined fixed parameter that scales the png photos.
 """
-def generate_save_figure(stl_mesh,elev,azim, dist):         
+def generate_save_figure(stl_mesh,elev,azim, dist, dir):         
     figure = pyplot.figure(figsize=(10,10))
     axes = figure.add_axes(mplot3d.Axes3D(figure, auto_add_to_figure=False))
     axes.grid(False)
@@ -44,18 +41,24 @@ def generate_save_figure(stl_mesh,elev,azim, dist):
     axes.view_init(elev=elev,azim=azim)
     axes.autoscale(True)
     axes.dist = dist
-    figure.savefig('./Images/elev({})-azim({}).png'.format(elev,azim), box_inches="tight")   
-    print('saved elev {}, azim {}'.format(elev,azim))
+    figure.savefig('./Images{}/elev({})-azim({}).png'.format("/" + dir,elev,azim), box_inches="tight")   
+    print('saved model {} elev {}, azim {}'.format(dir,elev,azim))
     del figure,axes,scale
     pyplot.close('all')
 
 #Code to generate images
-centered_stl_mesh = center_points_on_origin(raw_stl_mesh)
-for elev in range(0, 180, 30):
-    print(elev)
-    for azim in range(0, 360, 45):
-        print(azim)
-        generate_save_figure(centered_stl_mesh,elev,azim, 7)
+
+model_files = os.listdir("./3DModels")
+for model_file in model_files:
+    raw_stl_mesh = stl.mesh.Mesh.from_file("3DModels/" + model_file)
+    model_dir = model_file[ : -4]
+    os.mkdir("./Images/" + model_dir)
+    centered_stl_mesh = center_points_on_origin(raw_stl_mesh)
+    for elev in range(0, 180, 30):
+        print(elev)
+        for azim in range(0, 360, 45):
+            print(azim)
+            generate_save_figure(centered_stl_mesh,elev,azim, 7, model_dir)
 
 #Ignore below calculations done for determining dist parameter above.
 """
